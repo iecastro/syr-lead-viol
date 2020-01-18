@@ -10,30 +10,88 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+
 library(flexdashboard)
+library(sf)
+library(tidyverse)
+library(leaflet)
+
+# lead violations
+# updated by SYR open data on 12/18/2019
+lead_viol <- sf::read_sf("https://opendata.arcgis.com/datasets/5a03e6e9ea234a37b5c5e2923a067a2e_0.geojson")
+
+map_data <- lead_viol %>% 
+  mutate(lubridate::year(case_open_date),
+         complaint = stringr::str_trim(nature_of_complaint),
+         complaint = str_replace_all(complaint, "\r\n" , " "),
+         vacant = ifelse(is.na(vacant_property), "No", "Yes"),
+         case_open_date = lubridate::as_date(case_open_date)) %>% 
+  select(TNT = TNT_NAME,
+         Address = property_address,
+         Vacant = vacant,
+         Neighborhood = neighborhood,
+         Violation = complaint,
+         Case = case_number,
+         Opened = case_open_date,
+         Status = case_status,
+         Owner = property_owner_name
+  )
+
+
 ```
 
-Column {data-width=650}
+Column {data-width=400}
 -----------------------------------------------------------------------
 
-### Chart A
+### Open case locator
 
-```{r}
+```{r leaflet}
+
+center <- map_data %>%
+  summarise() %>%
+  st_centroid() %>% 
+  st_coordinates() %>% 
+  as_tibble()
+
+map_data %>% 
+  as_Spatial() %>% 
+  leaflet() %>%
+  setView(lng = center$X,
+          lat = center$Y,
+          zoom = 12) %>% 
+  addTiles() %>% 
+  addCircles(label = ~Address)
 
 ```
 
-Column {data-width=350}
+Column {data-width=600}
 -----------------------------------------------------------------------
 
-### Chart B
+### Case details
 
 ```{r}
 
-```
-
-### Chart C
-
-```{r}
+map_data %>% 
+  st_set_geometry(NULL) %>% 
+  mutate_at(vars(
+    TNT, Vacant, Neighborhood,
+    Case, Status, Owner),
+    as.factor) %>% 
+  DT::datatable(rownames = FALSE,
+                filter = "top",
+                extensions = "Buttons",
+                options = list(
+                  autoWidth = TRUE,
+                  columnDefs = list(list(width = '100px', 
+                                         targets = c(1,6))),
+                  dom = 'Bfrtip',
+                  buttons = c('csv', 'excel', 'print')
+                ),
+                caption = htmltools::tags$caption(
+                  
+                  style = 'caption-side: bottom; text-align: right;',
+                  'Case details as of 12/18/2019.  Source: data.syrgov.net')
+  )
 
 ```
 
