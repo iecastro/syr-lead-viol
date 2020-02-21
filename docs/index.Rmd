@@ -17,8 +17,8 @@ library(tidyverse)
 library(leaflet)
 
 # lead violations
-# updated by SYR open data on 12/18/2019
-lead_viol <- sf::read_sf("https://opendata.arcgis.com/datasets/5a03e6e9ea234a37b5c5e2923a067a2e_0.geojson")
+# updated by SYR open data on 1/19/2020
+lead_viol <- sf::read_sf("https://opendata.arcgis.com/datasets/9870ad89e2af406eb48e127af1429f09_0.geojson")
 
 map_data <- lead_viol %>% 
   mutate(lubridate::year(case_open_date),
@@ -26,7 +26,7 @@ map_data <- lead_viol %>%
          complaint = str_replace_all(complaint, "\r\n" , " "),
          vacant = ifelse(is.na(vacant_property), "No", "Yes"),
          case_open_date = lubridate::as_date(case_open_date)) %>% 
-  select(TNT = TNT_NAME,
+  select(#TNT = TNT_NAME, removed from dataset
          Address = property_address,
          Vacant = vacant,
          Neighborhood = neighborhood,
@@ -74,7 +74,7 @@ Column {data-width=600}
 map_data %>% 
   st_set_geometry(NULL) %>% 
   mutate_at(vars(
-    TNT, Vacant, Neighborhood,
+    Vacant, Neighborhood,
     Case, Status, Owner),
     as.factor) %>% 
   DT::datatable(rownames = FALSE,
@@ -82,15 +82,15 @@ map_data %>%
                 extensions = "Buttons",
                 options = list(
                   autoWidth = TRUE,
-                  columnDefs = list(list(width = '100px', 
-                                         targets = c(1,6))),
+                  columnDefs = list(list(width = '130px', 
+                                         targets = c(0,2,3,5))),
                   dom = 'Bfrtip',
                   buttons = c('csv', 'excel', 'print')
                 ),
                 caption = htmltools::tags$caption(
                   
                   style = 'caption-side: bottom; text-align: right;',
-                  'Case details as of 12/18/2019.  Source: data.syrgov.net')
+                  'Case details as of 1/19/2020.  Source: data.syrgov.net')
   )
 
 ```
