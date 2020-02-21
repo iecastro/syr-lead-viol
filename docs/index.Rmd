@@ -1,5 +1,5 @@
 ---
-title: "Open lead violations in Syracuse, NY"
+title: "Lead hazards in Syracuse, NY"
 output: 
   flexdashboard::flex_dashboard:
     theme: readable
@@ -7,6 +7,8 @@ output:
     orientation: columns
     vertical_layout: fill
     source_code: embed 
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -37,21 +39,43 @@ map_data <- lead_viol %>%
          Owner = property_owner_name
   )
 
+# parcel data
+# updated by SYR open data on 2/11/20
+# used query url to filter VacantBuil == Y
+vacants_query <- sf::read_sf("https://services6.arcgis.com/bdPqSfflsdgFRVVM/arcgis/rest/services/Parcel_Map_Q1_2020/FeatureServer/0/query?where=VacantBuil%20%3D%20'Y'&outFields=*&outSR=4326&f=json")
+
+vacants <- vacants_query %>% 
+  mutate(year = readr::parse_number(YearBuilt)) %>% 
+  filter(year < 1979) %>% 
+  select(ADDRESS, YearBuilt, BLDG_STYLE,
+         Owner, TNT, IPSConditi,
+         Neighborho, n_OpenViol, Occupancy) %>% 
+  st_centroid() # convert from polygon to point
+
+
+isTRUE(st_crs(map_data) == st_crs(vacants))
+
+
+# will add to leaflet to find center of all points
+# based on the violations data
+center <- map_data %>%
+  summarise() %>%
+  st_centroid() %>% 
+  st_coordinates() %>% 
+  as_tibble()
+
 
 ```
+
+
+# Open Lead Violations 
 
 Column {data-width=400}
 -----------------------------------------------------------------------
 
 ### Open case locator
 
-```{r leaflet}
-
-center <- map_data %>%
-  summarise() %>%
-  st_centroid() %>% 
-  st_coordinates() %>% 
-  as_tibble()
+```{r leaflet violations}
 
 map_data %>% 
   as_Spatial() %>% 
@@ -64,12 +88,13 @@ map_data %>%
 
 ```
 
+
 Column {data-width=600}
 -----------------------------------------------------------------------
 
 ### Case details
 
-```{r}
+```{r case datatable}
 
 map_data %>% 
   st_set_geometry(NULL) %>% 
@@ -83,7 +108,9 @@ map_data %>%
                 options = list(
                   autoWidth = TRUE,
                   columnDefs = list(list(width = '130px', 
-                                         targets = c(0,2,3,5))),
+                                         targets = c(0,2,5)),
+                                    list(width = '280px', 
+                                         targets = c(3))),
                   dom = 'Bfrtip',
                   buttons = c('csv', 'excel', 'print')
                 ),
@@ -94,4 +121,74 @@ map_data %>%
   )
 
 ```
+
+
+# Vacant Properties
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+### Property locator
+
+```{r leaflet vacants}
+
+vacants %>% 
+  as_Spatial() %>% 
+  leaflet() %>%
+  setView(lng = center$X,
+          lat = center$Y,
+          zoom = 12) %>% 
+  addTiles() %>% 
+  addCircles(label = ~ADDRESS,
+             color = "tomato")
+
+```
+
+Column {data-width=600}
+-----------------------------------------------------------------------
+
+### Property details
+
+```{r vacant datatable}
+
+vacants %>% 
+  st_set_geometry(NULL) %>% 
+  select(TNT,
+         Address = ADDRESS,
+         `Year Built` = YearBuilt,
+         Neighborhood = Neighborho,
+         `Open Violations` =  n_OpenViol,
+         Style = BLDG_STYLE,
+         `Property use` = Occupancy,
+          Condition = IPSConditi,
+         Owner) %>% 
+  mutate_at(vars(
+    TNT, Neighborhood,
+    Condition, Style,
+    `Property use`,
+    Owner),
+    as.factor) %>% 
+    DT::datatable(rownames = FALSE,
+                filter = "top",
+                extensions = "Buttons",
+                options = list(
+                  autoWidth = TRUE,
+                  columnDefs = list(
+                                    list(width = '180px', 
+                                         targets = c(1, 6, 8)),
+                                    list(width = '50px', 
+                                         targets = c(4, 7))
+                                    ),
+                  dom = 'Bfrtip',
+                  buttons = c('csv', 'excel', 'print')
+                ),
+                caption = htmltools::tags$caption(
+                  
+                  style = 'caption-side: bottom; text-align: right;',
+                  'Case details as of 2/11/2020.  Source: data.syrgov.net')
+  ) 
+
+```
+
+
 
