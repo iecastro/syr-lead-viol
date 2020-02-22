@@ -17,6 +17,7 @@ library(flexdashboard)
 library(sf)
 library(tidyverse)
 library(leaflet)
+library(leaflet.extras)
 
 # lead violations
 # updated by SYR open data on 1/19/2020
@@ -29,14 +30,14 @@ map_data <- lead_viol %>%
          vacant = ifelse(is.na(vacant_property), "No", "Yes"),
          case_open_date = lubridate::as_date(case_open_date)) %>% 
   select(#TNT = TNT_NAME, removed from dataset
-         Address = property_address,
-         Vacant = vacant,
-         Neighborhood = neighborhood,
-         Violation = complaint,
-         Case = case_number,
-         Opened = case_open_date,
-         Status = case_status,
-         Owner = property_owner_name
+    Address = property_address,
+    Vacant = vacant,
+    Neighborhood = neighborhood,
+    Violation = complaint,
+    Case = case_number,
+    Opened = case_open_date,
+    Status = case_status,
+    Owner = property_owner_name
   )
 
 # parcel data
@@ -71,7 +72,7 @@ center <- map_data %>%
 
 # Vacant Properties (built pre-1978)
 
-Column {data-width=400}
+Column {data-width=500}
 -----------------------------------------------------------------------
 
 ### Property locator
@@ -84,13 +85,28 @@ vacants %>%
   setView(lng = center$X,
           lat = center$Y,
           zoom = 12) %>% 
-  addTiles() %>% 
+  addTiles(group = "Map") %>% 
+  addProviderTiles(provider = "Esri.WorldImagery",
+                   group = "Satellite") %>% 
   addCircles(label = ~ADDRESS,
-             color = "tomato")
+             color = "tomato",
+             group = "Points") %>% 
+  addHeatmap(blur = 20, 
+             max = 0.25, 
+             radius = 10,
+             gradient = "OrRd",
+             group = "Density") %>% 
+  addLayersControl(
+    baseGroups = c("Map", "Satellite"),
+    overlayGroups = c("Points", "Density"),
+    position = "bottomleft",
+    options = layersControlOptions(collapsed = FALSE)
+  ) %>% 
+  hideGroup("Density")
 
 ```
 
-Column {data-width=600}
+Column {data-width=500}
 -----------------------------------------------------------------------
 
 ### Property details
@@ -106,7 +122,7 @@ vacants %>%
          `Open Violations` =  n_OpenViol,
          Style = BLDG_STYLE,
          `Property use` = Occupancy,
-          Condition = IPSConditi,
+         Condition = IPSConditi,
          Owner) %>% 
   mutate_at(vars(
     TNT, Neighborhood,
@@ -114,17 +130,17 @@ vacants %>%
     `Property use`,
     Owner),
     as.factor) %>% 
-    DT::datatable(rownames = FALSE,
+  DT::datatable(rownames = FALSE,
                 filter = "top",
                 extensions = "Buttons",
                 options = list(
                   autoWidth = TRUE,
                   columnDefs = list(
-                                    list(width = '180px', 
-                                         targets = c(1, 6, 8)),
-                                    list(width = '50px', 
-                                         targets = c(4, 7))
-                                    ),
+                    list(width = '180px', 
+                         targets = c(1, 6, 8)),
+                    list(width = '50px', 
+                         targets = c(4, 7))
+                  ),
                   dom = 'Bfrtip',
                   buttons = c('csv', 'excel', 'print')
                 ),
@@ -139,7 +155,7 @@ vacants %>%
 
 # Open OCHD Lead Violations 
 
-Column {data-width=400}
+Column {data-width=500}
 -----------------------------------------------------------------------
 
 ### Open case locator
@@ -152,13 +168,28 @@ map_data %>%
   setView(lng = center$X,
           lat = center$Y,
           zoom = 12) %>% 
-  addTiles() %>% 
-  addCircles(label = ~Address)
+  addTiles(group = "Map") %>% 
+  addProviderTiles(provider = "Esri.WorldImagery",
+                   group = "Satellite") %>% 
+  addCircles(label = ~Address,
+             group = "Points") %>% 
+  addHeatmap(blur = 20, 
+             max = 0.25, 
+             radius = 10,
+             gradient = "BuPu",
+             group = "Density") %>% 
+  addLayersControl(
+    baseGroups = c("Map", "Satellite"),
+    overlayGroups = c("Points", "Density"),
+    position = "bottomleft",
+    options = layersControlOptions(collapsed = FALSE)
+  ) %>% 
+  hideGroup("Density")
 
 ```
 
 
-Column {data-width=600}
+Column {data-width=500}
 -----------------------------------------------------------------------
 
 ### Case details
