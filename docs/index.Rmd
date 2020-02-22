@@ -65,65 +65,11 @@ center <- map_data %>%
   as_tibble()
 
 
-```
-
-
-# Open Lead Violations 
-
-Column {data-width=400}
------------------------------------------------------------------------
-
-### Open case locator
-
-```{r leaflet violations}
-
-map_data %>% 
-  as_Spatial() %>% 
-  leaflet() %>%
-  setView(lng = center$X,
-          lat = center$Y,
-          zoom = 12) %>% 
-  addTiles() %>% 
-  addCircles(label = ~Address)
 
 ```
 
 
-Column {data-width=600}
------------------------------------------------------------------------
-
-### Case details
-
-```{r case datatable}
-
-map_data %>% 
-  st_set_geometry(NULL) %>% 
-  mutate_at(vars(
-    Vacant, Neighborhood,
-    Case, Status, Owner),
-    as.factor) %>% 
-  DT::datatable(rownames = FALSE,
-                filter = "top",
-                extensions = "Buttons",
-                options = list(
-                  autoWidth = TRUE,
-                  columnDefs = list(list(width = '130px', 
-                                         targets = c(0,2,5)),
-                                    list(width = '280px', 
-                                         targets = c(3))),
-                  dom = 'Bfrtip',
-                  buttons = c('csv', 'excel', 'print')
-                ),
-                caption = htmltools::tags$caption(
-                  
-                  style = 'caption-side: bottom; text-align: right;',
-                  'Case details as of 1/19/2020.  Source: data.syrgov.net')
-  )
-
-```
-
-
-# Vacant Properties
+# Vacant Properties (built pre-1978)
 
 Column {data-width=400}
 -----------------------------------------------------------------------
@@ -185,10 +131,64 @@ vacants %>%
                 caption = htmltools::tags$caption(
                   
                   style = 'caption-side: bottom; text-align: right;',
-                  'Case details as of 2/11/2020.  Source: data.syrgov.net')
+                  'Property details as of 2/11/2020.  Source: data.syrgov.net')
   ) 
 
 ```
 
+
+# Open OCHD Lead Violations 
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+### Open case locator
+
+```{r leaflet violations}
+
+map_data %>% 
+  as_Spatial() %>% 
+  leaflet() %>%
+  setView(lng = center$X,
+          lat = center$Y,
+          zoom = 12) %>% 
+  addTiles() %>% 
+  addCircles(label = ~Address)
+
+```
+
+
+Column {data-width=600}
+-----------------------------------------------------------------------
+
+### Case details
+
+```{r case datatable}
+
+map_data %>% 
+  st_set_geometry(NULL) %>% 
+  mutate_at(vars(
+    Vacant, Neighborhood,
+    Case, Status, Owner),
+    as.factor) %>% 
+  DT::datatable(rownames = FALSE,
+                filter = "top",
+                extensions = "Buttons",
+                options = list(
+                  autoWidth = TRUE,
+                  columnDefs = list(list(width = '130px', 
+                                         targets = c(0,2,5)),
+                                    list(width = '280px', 
+                                         targets = c(3))),
+                  dom = 'Bfrtip',
+                  buttons = c('csv', 'excel', 'print')
+                ),
+                caption = htmltools::tags$caption(
+                  
+                  style = 'caption-side: bottom; text-align: right;',
+                  'Case details as of 1/19/2020.  Source: data.syrgov.net')
+  )
+
+```
 
 
